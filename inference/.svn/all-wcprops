@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/konstantina/!svn/ver/1014/dynamic_network/matlab_code/inference
+END
+sample_alpha.m
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/konstantina/!svn/ver/1014/dynamic_network/matlab_code/inference/sample_alpha.m
+END
+sample_weights.m
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/konstantina/!svn/ver/1014/dynamic_network/matlab_code/inference/sample_weights.m
+END
+update_interaction_counts.m
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/konstantina/!svn/ver/1014/dynamic_network/matlab_code/inference/update_interaction_counts.m
+END
+sample_totalweights.m
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/konstantina/!svn/ver/1014/dynamic_network/matlab_code/inference/sample_totalweights.m
+END
+test_model.m
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/konstantina/!svn/ver/1014/dynamic_network/matlab_code/inference/test_model.m
+END
+sample_phi.m
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/konstantina/!svn/ver/1014/dynamic_network/matlab_code/inference/sample_phi.m
+END
+run_inference.m
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/konstantina/!svn/ver/1014/dynamic_network/matlab_code/inference/run_inference.m
+END
+init_model.m
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/konstantina/!svn/ver/1014/dynamic_network/matlab_code/inference/init_model.m
+END
+sample_C.m
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/konstantina/!svn/ver/1014/dynamic_network/matlab_code/inference/sample_C.m
+END
+sample_weights_add.m
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/konstantina/!svn/ver/1014/dynamic_network/matlab_code/inference/sample_weights_add.m
+END
