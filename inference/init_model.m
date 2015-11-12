@@ -16,7 +16,7 @@ function [trZ, weights, K, n, ind] = init_model(Z, ID, alpha, tag, settings)
 
 
 % NOTE that a node appears at t when it is part of the network interactions at
-% time t. That includ the case when a node has 0 links at that time. 
+% time t. That includes the case when a node has 0 links at that time. 
 
 N = length(Z); % N = total # of time steps
 

@@ -1,4 +1,4 @@
-function [Z, N, N_new, N_old, c, K, w] = dyngraphrnd(alpha, sigma, tau, T, phi, rho, dt)
+function [Z, N, N_new, N_old, c, K, Knew, w] = dyngraphrnd(alpha, sigma, tau, T, phi, rho, dt)
 
 if sigma~=0
     error('Not implemented yet!')

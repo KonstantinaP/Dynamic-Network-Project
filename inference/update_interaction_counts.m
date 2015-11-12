@@ -4,12 +4,17 @@ function [mnew_res, mold_res, mn] = update_interaction_counts(t, Zt, logw, Nnew,
 
 
 mnew_t = Nnew(:, :, t);
+mold_t = Nold(:, :, t);
+
 
 if t == 1
     mnew_mt = zeros(size(mnew_t));
+    mold_mt = zeros(size(mold_t));
     deltat=0;
 else
     mnew_mt = Nnew(:, :,t-1);
+        mold_mt = Nold(:, :,t-1);
+
     deltat = settings.times(t)-settings.times(t-1);
 
 end
@@ -22,12 +27,11 @@ else
 
 end
     
-mold_t = Nold(:, :, t);
 pi = exp(-settings.rho*deltat);
 
 id = find(Zt);% Zt should be in the upper triangular form
 
-mold_prop = binornd(mnew_mt(id), pi.*ones(length(id),1));
+mold_prop = binornd(mnew_mt(id) + mold_mt(id), pi.*ones(length(id),1));
 
 [k]= length(logw);
 lograte_poi = log(2) + logw(ind1) + logw(ind2);
@@ -41,7 +45,10 @@ mold = mold_t(id);
 mold_plt = mold_plust(id);
 mnew_prop = td.*(mold_prop==0) + nd.*(mold_prop>0);
 
-logaccept = gammaln(mnew_prop+1) +gammaln(mnew +mold_plt +1) - gammaln(mnew+1)-gammaln(mnew_prop-mold_plt+1)+(mnew_prop - mnew)*log(1-pi);
+proposal = mnew_prop + mold_prop;
+current = mnew + mold;
+
+logaccept = gammaln(proposal+1) +gammaln(current +mold_plt +1) - gammaln(current+1)-gammaln(proposal-mold_plt+1)+(proposal - current)*log(1-pi);
  
 
 u = rand(length(id),1);

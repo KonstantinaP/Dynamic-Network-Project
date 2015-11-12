@@ -1,6 +1,6 @@
 % Metropolis-Hastings for sampling hypeparameter alpha
 
-function [alpha Wst Cst] = sample_alpha(weights, C, alpha, phi, tau)
+function [alpha Wst Cst] = sample_alpha(weights, C, alpha, phi, tau, alpha_a, alpha_b)
 
 
 [K, N] = size(weights);
@@ -12,14 +12,16 @@ for nn=1:nb_MH
     
     u = rand;
     logaccept = sum((-alpha+alpha_new).* log((tau+phi).*weights(end, 2:N))...
-        + gammaln(alpha+C(end, :))  - gammaln(alpha_new+C(end, :))) + (-alpha+alpha_new)*log(weights(end, 1)*(phi+tau)) ;
+        + gammaln(alpha+C(end, :))  - gammaln(alpha_new+C(end, :))) + (-alpha+alpha_new)*log(tau*weights(end, 1)) + gammaln(alpha) - gammaln(alpha_new) ;
     
     if rand<exp(logaccept) % If accept
         alpha = alpha_new;
     end
     
     
-    
+% [alpha] = slice_sample_alpha(weights, C, alpha, phi, tau, alpha_a, alpha_b)
+ 
+ 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%% Update w_{t\ast}, c_{t\ast}
     

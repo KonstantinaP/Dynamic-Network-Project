@@ -1,4 +1,4 @@
-function [weights_st, alpha_st, phi_st, stats] = run_inference(Z, ID, alpha, tau, phi, N_Gibbs, N_burn, thin, settings)
+function [weights_st, alpha_st, phi_st, stats, weights] = run_inference(Z, ID, alpha, tau, phi, N_Gibbs, N_burn, thin, settings)
 
 addpath 'utils/'
 
@@ -80,9 +80,6 @@ for t=1:N
         nnew = triu(nnew);
     end
     Nnew(:, :, t) = nnew;
-    
-    
-    
     if t==1
         deltat=0;
         nold = zeros(size(nnew));
@@ -147,7 +144,10 @@ for i=1:N_Gibbs
     % Sample alpha and w_{t\ast}, c_{t\ast} again here after alpha update
     % (included in the sample_alpha function)
     if i>1
-        [alpha, weights(end, :), C(end, :)] = sample_alpha( weights, C, alpha, phi, tau);
+        alpha_a =settings.alpha_a;
+        alpha_b = settings.alpha_b;
+        [alpha, weights(end, :), C(end, :)] = sample_alpha( weights, C, alpha, phi, tau, alpha_a, alpha_b);
+        
     end
     
     
@@ -168,7 +168,6 @@ for i=1:N_Gibbs
     
     % Sample weights
     [weights, rate(:, i)] = sample_weights(weights, C, M, epsilon, alpha, tau, phi, settings,issimple);
-    logweights = weights(1:K-1, :);
     
     if i<settings.leapfrog.nadapt % Adapt the stepsize
         epsilon = exp(log(epsilon) + .01*(mean(rate(:,1:i), 2) - 0.6));
@@ -179,8 +178,8 @@ for i=1:N_Gibbs
     % Additional moves for irreducibilitiy at times/objects with no links
     %TO BE DONE ********************
     
-    %     % Sample lambda and V at times/items with no observations
-    %     [lambda, V] = sample_weights_add();
+    %     % Sample C and weights at times/items with no observations
+    %     [weights, C] = sample_weights_add(C, weights);
     %
     % Sample correlation
     if settings.sample_correlation
