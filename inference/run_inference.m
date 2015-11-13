@@ -3,8 +3,7 @@ function [weights_st, alpha_st, phi_st, stats, weights] = run_inference(Z, ID, a
 addpath 'utils/'
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% [lambda_st, a_st, rho_st, stats] = run_inference(X, K, a, rho, rho_param,
-% N_Gibbs, N_burn)
+% [weights_st, alpha_st, phi_st, stats, weights] = run_inference(Z, ID, alpha, tau, phi, N_Gibbs, N_burn, thin, settings)
 %
 % Gibbs sampler for the dynamic model
 %
