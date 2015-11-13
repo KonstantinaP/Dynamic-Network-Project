@@ -45,6 +45,7 @@ mold = mold_t(id);
 mold_plt = mold_plust(id);
 mnew_prop = td.*(mold_prop==0) + nd.*(mold_prop>0);
 
+
 proposal = mnew_prop + mold_prop;
 current = mnew + mold;
 

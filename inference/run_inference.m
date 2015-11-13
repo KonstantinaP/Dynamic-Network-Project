@@ -47,13 +47,13 @@ K = K + 1; %Increase the number of nodes by one to account for the unobserved on
 N_samples = (N_Gibbs-N_burn)/thin;
 alpha_st = zeros(N_samples, 1);
 weights_st = cell(1, N_samples);
-% pause
-for k=1:N
-    lambda_st{k}= zeros(N_samples, K, 'single');
-    pi_st{k}= zeros(N_samples, K, 'single');
-end
-a_st(1) = alpha;
 phi_st = zeros(N_samples, 1);
+for k=1:N
+    weights_st{k}= zeros(N_samples, K, 'single');
+    
+end
+alpha_st(1) = alpha;
+
 
 % Init C
 C = poissrnd(phi.*(weights(:, 1:N-1)));
@@ -66,8 +66,13 @@ else
     issimple =false;
 end
 
+% Initialise interaction counts
+Nnew = zeros(K-1, K-1, N);
+Nold = zeros(K-1, K-1, N);
 
 for t=1:N
+    
+    % Init Nnew
     rr = weights(1:K-1, t)*weights(1:K-1, t)';
     
     nnew = poissrnd(rr);
@@ -80,6 +85,9 @@ for t=1:N
         nnew = triu(nnew);
     end
     Nnew(:, :, t) = nnew;
+    
+    
+    % initialize Nold
     if t==1
         deltat=0;
         nold = zeros(size(nnew));
@@ -89,7 +97,7 @@ for t=1:N
     else
         deltat= settings.times(t) - settings.times(t-1);
         pi = exp(-settings.rho*deltat);
-        nold = binornd(Nnew(:, :, t-1), pi.*ones(size(nnew)));
+        nold = binornd(Nnew(:, :, t-1)+Nold(:, :, t-1), pi.*ones(size(nnew)));
         
         
     end
@@ -130,6 +138,7 @@ for i=1:N_Gibbs
         fprintf('i=%d\n', i)
         fprintf('phi=%.2f\n', phi);
         fprintf('alpha=%.2f\n', alpha);
+        fprintf('\n\n');
     end
     
     % Sample the total weights at each time and rescale the marginal weights
@@ -139,7 +148,9 @@ for i=1:N_Gibbs
     
     % Sample the latent C (C_{tk} and c_{t\ast}) for correlation given weights in the Pitt-Walker
     % dependence.
+    if N>1
     C = sample_C(C, weights, phi, alpha, tau);
+    end
     
     % Sample alpha and w_{t\ast}, c_{t\ast} again here after alpha update
     % (included in the sample_alpha function)
@@ -165,9 +176,10 @@ for i=1:N_Gibbs
         Nold(:,:, t) = old_inter;
         M(:, t) = Mn; % matrix M should be of size K-1 x T
     end
-    
+
     % Sample weights
     [weights, rate(:, i)] = sample_weights(weights, C, M, epsilon, alpha, tau, phi, settings,issimple);
+    logweights = log(weights(1:(K-1), :));
     
     if i<settings.leapfrog.nadapt % Adapt the stepsize
         epsilon = exp(log(epsilon) + .01*(mean(rate(:,1:i), 2) - 0.6));
@@ -182,11 +194,13 @@ for i=1:N_Gibbs
     %     [weights, C] = sample_weights_add(C, weights);
     %
     % Sample correlation
-    if settings.sample_correlation
+    if settings.sample_correlation && N>1
         phi_a = settings.phi_a;
         phi_b = settings.phi_b;
         %phi = sample_phi(phi, phi_a, phi_b, weights, alpha, tau);
         phi = slice_sample_phi(phi, phi_a, phi_b, weights, alpha, tau);
+        
+        
     end
     
     %     % Store outputs

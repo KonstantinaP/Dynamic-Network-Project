@@ -99,7 +99,7 @@ end
 %% Gradient
 function [out] = grad_U(t, M, wvec, w_rem, counts, alpha, tau, phi, settings)
 if N ==1
-    out(1, :)= -(M(:, 1)) +wvec.*(2*sum(wvec)+2*w_rem + tau);
+    out( :, 1)= -(M(:, 1)) +wvec.*(2*sum(wvec)+2*w_rem + tau);
 else
     switch t
         case 1

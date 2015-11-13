@@ -54,7 +54,6 @@ for nn=1:nb_MH
             
             %%%% Update w_{t\ast}
             wsnew = gamrnd(alpha +(t>1)*Cst(t-1), 1/(phi*(t>1)+tau));
-            cc=0;
             if t<N
                 cc = C(end, t);
             end
