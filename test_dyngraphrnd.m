@@ -5,12 +5,12 @@ seed=2;
 rand('seed',seed);
 randn('seed',seed);
 
-alpha = 20; sigma = 0; tau = 1; % Parameters gamma process
-phi = 50; % tunes dependence in dependent gamma process 
-rho = 0.1; % death rate for latent interactions
+alpha = 10; sigma = 0; tau = 1; % Parameters gamma process
+phi = 10; % tunes dependence in dependent gamma process 
+rho = 1; % death rate for latent interactions
 T = 10; % Number of time steps
 
-[Z, N, N_new, N_old, c, K, w] = dyngraphrnd(alpha, sigma, tau, T, phi, rho);
+[Z, N, N_new, N_old, c, K, Knew, w] = dyngraphrnd(alpha, sigma, tau, T, phi, rho);
 
 figure 
 weights = w(:, 1:K(T));
