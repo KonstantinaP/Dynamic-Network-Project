@@ -8,18 +8,18 @@ alpha_std=0.1;
 nb_MH = 1; % Nb of MH iterations
 for nn=1:nb_MH
     
-    alpha_new = alpha*exp(alpha_std*randn);
+%     alpha_new = alpha*exp(alpha_std*randn);
+%     
+%     u = rand;
+%     logaccept = sum((-alpha+alpha_new).* log((tau+phi).*weights(end, 2:N))...
+%         + gammaln(alpha+C(end, :))  - gammaln(alpha_new+C(end, :))) + (-alpha+alpha_new)*log(tau*weights(end, 1)) + gammaln(alpha) - gammaln(alpha_new) ;
+%     
+%     if rand<exp(logaccept) % If accept
+%         alpha = alpha_new;
+%     end
+%     
     
-    u = rand;
-    logaccept = sum((-alpha+alpha_new).* log((tau+phi).*weights(end, 2:N))...
-        + gammaln(alpha+C(end, :))  - gammaln(alpha_new+C(end, :))) + (-alpha+alpha_new)*log(tau*weights(end, 1)) + gammaln(alpha) - gammaln(alpha_new) ;
-    
-    if rand<exp(logaccept) % If accept
-        alpha = alpha_new;
-    end
-    
-    
-% [alpha] = slice_sample_alpha(weights, C, alpha, phi, tau, alpha_a, alpha_b)
+ [alpha] = slice_sample_alpha(weights, C, alpha, phi, tau, alpha_a, alpha_b);
  
  
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -18,7 +18,6 @@ for nn=1:nb_MH
     u = rand(K, N-1);
     logaccept = (-C+Cnew).* log((tau+phi).*weights(:, 2:N))...
         + gammaln(a+C)  - gammaln(a+Cnew);
-        
     accept = exp(logaccept);
     C(u<accept) = Cnew(u<accept);
     

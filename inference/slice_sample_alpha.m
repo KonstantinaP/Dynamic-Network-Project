@@ -20,9 +20,12 @@ alpha=exp(res);
    
        
     [K N] = size(weights);
+   
      out = (a + C(end,1:N-1)).* log(tau+phi) - (phi+tau).*weights(end, 2:N)...
          + (a + C(end, 1:N-1)-1).*log(weights(end, 2:N))-gammaln(a+C(end, 1:N-1));
-     
+     if ~isfinite(out)
+         keyboard
+     end
      out = sum(out) + a*log(tau) -weights(end,1)*tau+(a-1)*log(weights(end,1)) -gammaln(a);
 
         

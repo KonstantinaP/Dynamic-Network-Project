@@ -1,4 +1,4 @@
-function [weights_st, alpha_st, phi_st, stats, weights] = run_inference(Z, ID, alpha, tau, phi, N_Gibbs, N_burn, thin, settings)
+function [weights_st, alpha_st, phi_st, stats, weights, C, Nnew, Nold] = run_inference(Z, ID, alpha, tau, phi, N_Gibbs, N_burn, thin, settings)
 
 addpath 'utils/'
 
@@ -77,40 +77,19 @@ for t=1:N
     nnew = poissrnd(rr);
     nnew = nnew + nnew' -diag(diag(nnew));
     
-    if issimple % If no self-loops
-        nnew = triu(nnew, 1);
-        
-    else
-        nnew = triu(nnew);
-    end
-    Nnew(:, :, t) = nnew;
-    
+    Nnew(:, :, t) = triu(nnew, 1)*(issimple) + triu(nnew)*(~issimple);
     
     % initialize Nold
     if t==1
         deltat=0;
         nold = zeros(size(nnew));
-        
-        
-        
     else
         deltat= settings.times(t) - settings.times(t-1);
         pi = exp(-settings.rho*deltat);
         nold = binornd(Nnew(:, :, t-1)+Nold(:, :, t-1), pi.*ones(size(nnew)));
-        
-        
     end
     
-    
-    if issimple % If no self-loops
-        nold = triu(nold, 1);
-        
-    else
-        nold = triu(nold);
-    end
-    Nold(:, :, t) = nold;
-    
-    
+    Nold(:, :, t) =triu(nold, 1)*(issimple) + triu(nold)*(~issimple);
 end
 
 
@@ -127,9 +106,6 @@ rate=zeros(N, N_Gibbs);
 epsilon = settings.leapfrog.epsilon/(K-1)^(1/4).*ones(N,1); % Leapfrog stepsize
 
 
-
-
-
 % Iterate Gibbs sampler
 tic
 for i=1:N_Gibbs
@@ -142,17 +118,20 @@ for i=1:N_Gibbs
     
     % Sample the total weights at each time and rescale the marginal weights
     % correspondingly
-    weights = sample_totalweights(weights, phi, alpha, tau);
+    
+    % weights = sample_totalweights(weights, phi, alpha, tau);
     logweights = log(weights(1:(K-1), :));
     
     % Sample the latent C (C_{tk} and c_{t\ast}) for correlation given weights in the Pitt-Walker
     % dependence.
     if N>1
-    C = sample_C(C, weights, phi, alpha, tau);
+        C = sample_C(C, weights, phi, alpha, tau);
     end
     
     % Sample alpha and w_{t\ast}, c_{t\ast} again here after alpha update
     % (included in the sample_alpha function)
+    
+    
     if i>1
         alpha_a =settings.alpha_a;
         alpha_b = settings.alpha_b;
@@ -175,9 +154,10 @@ for i=1:N_Gibbs
         Nold(:,:, t) = old_inter;
         M(:, t) = Mn; % matrix M should be of size K-1 x T
     end
-
+ 
     % Sample weights
     [weights, rate(:, i)] = sample_weights(weights, C, M, epsilon, alpha, tau, phi, settings,issimple);
+    
     logweights = log(weights(1:(K-1), :));
     
     if i<settings.leapfrog.nadapt % Adapt the stepsize
@@ -186,12 +166,12 @@ for i=1:N_Gibbs
     
     
     %***********
-    % Additional moves for irreducibilitiy at times/objects with no links
-    %TO BE DONE ********************
+    % Additional moves for irreducibilitiy at times/objects with no links   
     
-    %     % Sample C and weights at times/items with no observations
-    %     [weights, C] = sample_weights_add(C, weights);
-    %
+    [weights, C] = sample_weights_add(C, weights, M ,phi, tau);
+
+
+    
     % Sample correlation
     if settings.sample_correlation && N>1
         phi_a = settings.phi_a;
@@ -248,5 +228,5 @@ for k=1:N
     stats.weights_95(:, k) = quantile(weights_st{k}, .95);
 end
 
- stats.alpha_mean = mean(alpha_st(N_burn+1:N_Gibbs, :));
- stats.alpha_std = std(alpha_st(N_burn+1:N_Gibbs, :));
+stats.alpha_mean = mean(alpha_st(N_burn+1:N_Gibbs, :));
+stats.alpha_std = std(alpha_st(N_burn+1:N_Gibbs, :));
