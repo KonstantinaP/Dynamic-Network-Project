@@ -1,4 +1,4 @@
-function [weights_st, alpha_st, phi_st, stats, weights, C, Nnew, Nold] = run_inference(Z, ID, alpha, tau, phi, N_Gibbs, N_burn, thin, settings)
+function [weights_st, alpha_st, phi_st, stats, weights, C, Nnew, Nold] = run_inference(Z, alpha, tau, phi, N_Gibbs, N_burn, thin, settings)
 
 addpath 'utils/'
 
@@ -34,29 +34,33 @@ addpath 'utils/'
 
 
 
-% Initialization for the dynamic model
+% Initialization of the dynamic model
 %tag = 1; % 1 indicates that weights do not have to appear in the likelihood before first appearance in data
-tag=1;
-[G, weights, K, nodes_step, ind] = init_model(Z, ID, alpha, tag, settings);
-N = length(Z); % Number of time steps
-K = K + 1; %Increase the number of nodes by one to account for the unobserved ones.
+tag=0;
+[G, weights, nodes_step, ind] = init_model(Z, alpha, tag, settings);
+%Z is symmetric
+%G is upper triangular of Z
 
+% `weights' is of size K+1 x N
+N = length(Z); % Number of time steps
+K = size(weights,1); % Increased number of nodes by one to account for the unobserved ones. K updated here
 
 % Storage of some values
 N_samples = (N_Gibbs-N_burn)/thin;
 alpha_st = zeros(N_samples, 1);
-weights_st = cell(1, N_samples);
+weights_st = cell(1, N);
 phi_st = zeros(N_samples, 1);
 for k=1:N
     weights_st{k}= zeros(N_samples, K, 'single');
-    
 end
 alpha_st(1) = alpha;
 
 
+%phi = phi*ones(K, N);
 % Init C
-C = poissrnd(phi.*(weights(:, 1:N-1)));
-C(isnan(weights(:, 1:N-1)))=0;
+C = poissrnd(phi.*(weights(:, 1:N)));
+C(isnan(weights(:, 1:N)))=0;
+phi(isnan(weights(:, 1:N)))=0;
 
 
 if strcmp(settings.typegraph, 'simple')
@@ -74,15 +78,15 @@ for t=1:N
     % Init Nnew
     rr = weights(1:K-1, t)*weights(1:K-1, t)';
     
-    nnew = poissrnd(rr);
+    nnew = poissrnd(rr)+1; % I added one to test
     nnew = nnew + nnew' -diag(diag(nnew));
     
-    Nnew(:, :, t) = triu(nnew, 1)*(issimple) + triu(nnew)*(~issimple);
+    Nnew(:, :, t) = triu(nnew, 1)*(issimple) + triu(nnew)*(~issimple); % Nnew is upper triangular
     
     % initialize Nold
     if t==1
         deltat=0;
-        nold = zeros(size(nnew));
+        nold = zeros(size(nnew)) +1;
     else
         deltat= settings.times(t) - settings.times(t-1);
         pi = exp(-settings.rho*deltat);
@@ -116,49 +120,50 @@ for i=1:N_Gibbs
         fprintf('\n\n');
     end
     
-    % Sample the total weights at each time and rescale the marginal weights
-    % correspondingly
-    
-    % weights = sample_totalweights(weights, phi, alpha, tau);
-    logweights = log(weights(1:(K-1), :));
-    
-    % Sample the latent C (C_{tk} and c_{t\ast}) for correlation given weights in the Pitt-Walker
-    % dependence.
-    if N>1
-        C = sample_C(C, weights, phi, alpha, tau);
-    end
-    
-    % Sample alpha and w_{t\ast}, c_{t\ast} again here after alpha update
-    % (included in the sample_alpha function)
-    
-    
-    if i>1
-        alpha_a =settings.alpha_a;
-        alpha_b = settings.alpha_b;
-        [alpha, weights(end, :), C(end, :)] = sample_alpha( weights, C, alpha, phi, tau, alpha_a, alpha_b);
-        
-    end
-    
-    
-    
-    % Sample w_{t\ast} (included in alpha)
     
     % Sample new interaction counts
     for t=1:N
         id=ind{t};
         ind1=id(:,1);
         ind2=id(:,2);
-        logw=logweights(:, t); % should be K-1 in the rows
-        [new_inter, old_inter, Mn] = update_interaction_counts(t, G{t}, logw, Nnew, Nold, ind1, ind2, N, settings);
+        logw=log(weights(1:end-1, t)); % should be K-1 in the rows
+        [new_inter, old_inter, Mn] = update_interaction_counts_ii(t, G{t}, logw, Nnew, Nold, ind1, ind2, N, settings);
         Nnew(:,:, t) = new_inter;
         Nold(:,:, t) = old_inter;
         M(:, t) = Mn; % matrix M should be of size K-1 x T
     end
- 
-    % Sample weights
-    [weights, rate(:, i)] = sample_weights(weights, C, M, epsilon, alpha, tau, phi, settings,issimple);
     
-    logweights = log(weights(1:(K-1), :));
+    
+    % Sample weights
+    [weights, rate(:, i)] = sample_weights(weights, C, M, epsilon, alpha, tau, phi, settings);
+    
+        
+
+    % Sample the total weights at each time and rescale the marginal weights
+    % correspondingly
+    
+    % weights = sample_totalweights(weights, phi, alpha, tau);
+    
+    % Sample the latent C (C_{tk} and c_{t\ast}) for correlation given weights in the Pitt-Walker
+    % dependence.
+    
+    if N>1
+        C = sample_C(C, weights, phi, alpha, tau);
+    end
+    
+    % Sample w_{t\ast},
+    [weights] = sample_Wst(weights, C, alpha, phi, tau);
+    
+    if i>1 & settings.sample_alpha
+        alpha_a =settings.alpha_a;
+        alpha_b = settings.alpha_b;
+        
+        
+        [alpha] = slice_sample_alpha(weights, C, alpha, phi, tau, alpha_a, alpha_b);
+        
+        
+    end
+    
     
     if i<settings.leapfrog.nadapt % Adapt the stepsize
         epsilon = exp(log(epsilon) + .01*(mean(rate(:,1:i), 2) - 0.6));
@@ -166,14 +171,14 @@ for i=1:N_Gibbs
     
     
     %***********
-    % Additional moves for irreducibilitiy at times/objects with no links   
+    % Additional moves for irreducibilitiy at times/objects with no links
     
-    [weights, C] = sample_weights_add(C, weights, M ,phi, tau);
-
-
+    %[weights, C] = sample_weights_add(C, weights, M, alpha, phi, tau);
+    
+    
     
     % Sample correlation
-    if settings.sample_correlation && N>1
+    if settings.sample_phi && N>1
         phi_a = settings.phi_a;
         phi_b = settings.phi_b;
         %phi = sample_phi(phi, phi_a, phi_b, weights, alpha, tau);

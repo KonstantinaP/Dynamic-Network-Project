@@ -1,11 +1,47 @@
 K 25
 svn:wc:ra_dav:version-url
 V 74
-/svn/konstantina/!svn/ver/1014/dynamic_network/matlab_code/inference/utils
+/svn/konstantina/!svn/ver/1067/dynamic_network/matlab_code/inference/utils
+END
+savefig.m
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/konstantina/!svn/ver/1067/dynamic_network/matlab_code/inference/utils/savefig.m
 END
 tpoissrnd.m
 K 25
 svn:wc:ra_dav:version-url
 V 86
 /svn/konstantina/!svn/ver/1014/dynamic_network/matlab_code/inference/utils/tpoissrnd.m
+END
+GGPsumrnd.m
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/konstantina/!svn/ver/1017/dynamic_network/matlab_code/inference/utils/GGPsumrnd.m
+END
+plot_degree.m
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/konstantina/!svn/ver/1065/dynamic_network/matlab_code/inference/utils/plot_degree.m
+END
+GGPcheckparams.m
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/konstantina/!svn/ver/1017/dynamic_network/matlab_code/inference/utils/GGPcheckparams.m
+END
+GGPrnd.m
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/konstantina/!svn/ver/1017/dynamic_network/matlab_code/inference/utils/GGPrnd.m
+END
+plot_loglog.m
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/konstantina/!svn/ver/1065/dynamic_network/matlab_code/inference/utils/plot_loglog.m
 END

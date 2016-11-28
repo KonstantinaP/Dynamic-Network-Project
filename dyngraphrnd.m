@@ -1,5 +1,12 @@
-function [Z, N, N_new, N_old, c, K, Knew, w] = dyngraphrnd(alpha, sigma, tau, T, phi, rho, dt)
+function [Z, w, c, K, N_new, N_old, N, M, indlinks] = dyngraphrnd(alpha, sigma, tau, T, phi, rho, gvar, settings)
 
+
+dt = settings.dt;
+% Function that simulates from the process.
+% output Z: symmetric
+%        N's: all directed counts, non-symmetric
+
+threshold =  settings.threshold;
 if sigma~=0
     error('Not implemented yet!')
 end
@@ -8,92 +15,116 @@ if nargin<7
     dt = 1; % discretization step
 end
 
-indmax = 1000; % so that to allocate memory
+binall = [];
+
+% indmax = 1900; % so that to allocate memory
+indmax = 10000; % so that to allocate memory
 c = zeros(T, indmax);
 w = zeros(T, indmax);
 
-%% Sample the latent C_1,C_2,...
-K = zeros(T, 1); % K(t): \sum_k=1^t c_{ki}>0 for all i<=K(t), 0 otherwise
-w1_all = gamrnd(alpha, 1/tau);
-c1_all = poissrnd(phi*w1_all);
-if c1_all>0
-    [~, m, K(1)] = crprnd(alpha, c1_all);
-    for i=1:K(1)
-        c(1, i) = m(i);
-    end
-else
-    K(1) = 0;
-end
+% Sample the graph conditional on the weights w
+[wvec ] = GGPrnd(alpha, sigma, tau,  threshold);
+w(1, 1:length(wvec)) = wvec;
 
+c(1, 1:length(wvec)) = poissrnd(phi*wvec);
+K(1) = length(wvec);
 for t=2:T
-    % Sample counts for existing atoms
+    %% Sample counts for existing atoms
     ind = c(t-1,:)>0;
     w(t, ind) = gamrnd(c(t-1,ind), 1/(tau+phi));
     c(t,ind) = poissrnd(phi*w(t, ind));
-    % Sample counts for new atoms
-    w_rest = gamrnd(alpha, 1/(tau+phi));
-    c_rest = poissrnd(phi * w_rest);
-    if c_rest>0
-        [~, m, K_new] = crprnd(alpha, c_rest);    
-        for i=1:K_new
-            c(t, K(t-1)+i) = m(i);
-        end
-        K(t) = K(t-1) + K_new;   
-    else
-        K(t) = K(t-1);
-    end
+    
+    % Sample new atoms
+    wnew = GGPrnd(alpha, sigma, tau+phi, threshold);
+    cnew = poissrnd(phi.*wnew);
+    knew = length(wnew);
+    w(t, K(t-1)+1:K(t-1)+ knew)=wnew;
+    c(t, K(t-1)+1:K(t-1)+ knew)=cnew;
+    K(t) = K(t-1)+ knew;
 end
-c = c(:, 1:K(T));
 
 
-%% Sample the network given the C's
-Knew = zeros(T, 1); % Number of nodes which only appear at time t (for which c_ti=c_t-1i=0)
-N_new = zeros(T, indmax, indmax);
-N_old = zeros(T, indmax, indmax);
-N = zeros(T, indmax, indmax);
-Z = zeros(T, indmax, indmax);
-% t=1
-w1_all = gamrnd(alpha + sum(c(1,:)), 1/(tau+phi));
-d1_all = poissrnd(w1_all^2);
-if d1_all>0
-    [partition] = crp2rnd(alpha, 2*d1_all, c(1,:));
-    for i=1:2:2*d1_all-1
-        N_new(1,partition(i), partition(i+1)) = N_new(1,partition(i), partition(i+1)) + 1;
-    end
-    Knew(1) = length(unique(partition(partition>K(T)))); % Nodes which are only present at time t
+w=w(:, 1:K(T));
+c=c(:, 1:K(T));
+
+
+% % Sample the network given the C's
+if ~settings.gcontrol
+    gvar = ones(1, T);
 else
-    Knew(1) = 0;
+    %         gvar = gamrnd(settinga.g_a, 1/settings.g_b, 1, T);
+    gvar=gvar;
 end
-N(1,:,:) = N_new(1,:,:);
-Z(1,:,:) = (squeeze(N(1,:,:))+ squeeze(N(1,:,:))')>0;  
 
-% t= 2,...T
+N_new = zeros(T, K(T), K(T));
+N_old = zeros(T, K(T), K(T));
+N = zeros(T, K(T), K(T));
+Z = zeros(T, K(T), K(T));
+% t=1
+cumsum_w = [0, cumsum(w(1,:))];
+W_star = cumsum_w(end);  % Total mass of the GGP
+D_star = poissrnd(gvar(1)*(W_star)^2); % Total number of directed edges
+
+
+
+
+temp = W_star * rand(D_star, 2);
+[~, bin] = histc(temp, cumsum_w);
+for d=1:D_star
+    N_new(1,bin(d,1), bin(d,2)) = N_new(1,bin(d,1), bin(d,2))+ 1;
+end
+binall = [binall bin(:)'];
+N(1,:,:) = N_new(1,:,:);
+Z(1,:,:) = (squeeze(N(1,:,:))+ squeeze(N(1,:,:))')>0;
+
+
+
+
 for t=2:T
-    % Sample new interactions
-    wt_all = gamrnd(alpha + sum(c(t-1,:)+c(t,:)), 1/(tau+2*phi));
-    dt_all = poissrnd(wt_all^2);
-    if dt_all>0
-        [partition] = crp2rnd(alpha, 2*dt_all, c(t-1,:) + c(t,:) );
-        partition(partition>K(T)) = partition(partition>K(T)) + sum(Knew(1:t-1));
-        Knew(t) = length(unique(partition(partition>K(T))));
-        for i=1:2:2*dt_all-1
-            N_new(t,partition(i), partition(i+1)) = N_new(t,partition(i), partition(i+1)) + 1;
-        end
-    else
-        Knew(t) = 0;
+    
+    cumsum_w = [0, cumsum(w(t,:))];
+    W_star = cumsum_w(end);  % Total mass of the GGP
+    D_star = poissrnd(gvar(t)*(W_star^2)); % Total number of directed edges
+    
+    temp = W_star * rand(D_star, 2);
+    [~, bin] = histc(temp, cumsum_w);
+    
+    binall = [binall bin(:)'];
+    for d=1:D_star
+        N_new(t,bin(d,1), bin(d,2)) = N_new(t,bin(d,1), bin(d,2))+ 1;
     end
     % Sample old interactions
     N_old(t,:,:) = binornd(N(t-1,:,:), exp(-rho*dt) );
+    
     % Aggregate old + new
     N(t,:,:) = N_new(t,:,:) + N_old(t,:,:);
+    
     % Obtain undirected graph from directed one
-    Z(t,:,:) = (squeeze(N(t,:,:))+ squeeze(N(t,:,:))')>0;        
+    Z(t,:,:) = (squeeze(N(t,:,:)) + squeeze(N(t,:,:))')>0;
+    
+%     fprintf('network for location t=%d created \n', t )
+    
+    
 end
-maxclust = K(T)+sum(Knew);% max(find(sum(Z(end,:,:))>0))
-N_new = N_new(:,1:maxclust,1:maxclust);
-N_old = N_old(:,1:maxclust,1:maxclust);
-N = N(:,1:maxclust,1:maxclust);
-Z = Z(:,1:maxclust,1:maxclust);
+
+%     maxclust = K(T);% max(find(sum(Z(end,:,:))>0))
+%     N_new = N_new(:,1:maxclust,1:maxclust); % directed counts, non-symmetric
+%     N_old = N_old(:,1:maxclust,1:maxclust); % directed counts, non-symmetric
+%     N = N(:,1:maxclust,1:maxclust); % directed counts, non-symmetric
+%     Z = Z(:,1:maxclust,1:maxclust); % symmetric
+%
+
+
+for t=1:T
+    M(:, t) = sum(squeeze(N_new(t, :, :)),1)' + sum(squeeze(N_new(t, :, :)), 2) - diag(squeeze(N_new(t, :, :)));
 end
+%     keyboard
+indlinks = sum(M, 2)>0;
+
+
+
+end
+
+
 
 

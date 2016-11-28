@@ -4,94 +4,151 @@ close all
 addpath '../'
 addpath '../inference/'
 addpath '../inference/utils/'
-% create the Pitt-Walker model 
 
-% 
+
+% cases considered and checked
+% phi = 0 : counts all 0, as expected
+
+
+
+%
 % seed=10;
 % randn('seed', seed);
 % rand('seed', seed);
 
 
-%% Sample the latent C_1,C_2,...
-tau=1; 
-alpha=5; 
-T=10;
-phi=1;
-
-indmax = 1000; % so that to allocate memory
-c = zeros(T, indmax);
-w = zeros(T, indmax);
 
 
-w1_all = gamrnd(alpha, 1/tau);
-c1_all = poissrnd(phi*w1_all);
-if c1_all>0
-    [~, m, K(1)] = crprnd(alpha, c1_all);
-    for i=1:K(1)
-        c(1, i) = m(i);
-        theta(i) = alpha*rand;
-    end
-else
-    K(1) = 0;
-end
+alpha = 4; sigma = 0; tau = 1; % Parameters gamma process
+phi = 10;                       % tunes dependence in dependent gamma process
+rho = 0.1;                      % death rate for latent interactions
+T = 4;                         % Number of time steps
+settings.dt=1;
+settings.fromggprnd=1;
+settings.onlychain=0;
+settings.threshold=1e-6;
 
-wrest = zeros(1, T);
-crest = zeros(1, T);
-for t=2:T
-    % Sample counts for existing atoms
-    ind = c(t-1,:)>0;
-    w(t, ind) = gamrnd(c(t-1,ind), 1/(tau+phi));
-    c(t,ind) = poissrnd(phi*w(t, ind));
-    % Sample counts for new atoms
-    w_rest = gamrnd(alpha, 1/(tau+phi));
-    c_rest = poissrnd(phi * w_rest);
-    if c_rest>0
-        [~, m, K_new] = crprnd(alpha, c_rest);    
-        for i=1:K_new
-            c(t, K(t-1)+i) = m(i);
-            theta(K(t-1)+i) = alpha*rand;
-        end
-        K(t) = K(t-1) + K_new;   
-    else
-        K(t) = K(t-1);
-    end
-    wrest(t) = w_rest;
-    crest(t) = c_rest;
-end
-trueC = c(2:T-1, 1:K(T-1))';
-trueC(end+1,:) = crest(2:end-1);
+settings.leapfrog.epsilon = 0.1;
+settings.leapfrog.L = 10;
+settings.leapfrog.nadapt=0;
+settings.gcontrol=0;
+N_burn = 0;
+thin = 1;
+gvar = zeros(1,T);
+[Z, w, c, KT,  N_new, N_old, N, M, indchain]= dyngraphrnd(alpha, sigma, tau, T, phi, rho, gvar, settings);
+keyboard
+ 
 
-weights = w(2:T, 1:K(T-1))';
-weights(end+1, :) = wrest(2:end);
-% % sample from GGP in the local steps
-% local_w = zeros(T, indmax);
-% kmax=0;
-% sigma=0;
-% for t=1:T
-%     
-%     
-%     [temp, threshold] = GGPrnd(alpha, sigma, tau)
-%     local_w(t, 1:length(temp))=temp;
-%     kmax= max(kmax, length(temp));
-%     
-%    
-% end
-% 
-% local_w = local_w(:, 1:kmax);
-% m
 
-% 
+Na = size(w,2);
+%tweights=w(:, 1:K(T));test_C
 
+indlog = false(1, length(indchain)) ;
+indlog(indchain) = true;
+
+wrem =  sum(w(:, ~indlog),2); % need to compute wrem so that we can use it as it is for the inference on weights
+tw =w(:, indlog); % keep only the nodes that are active at least one time over T.
+
+%Increase the number of nodes by one to account for the unobserved ones.
+tw = [tw'; wrem' ];
+crem =  sum(c(:, ~indlog),2);
+
+tc=[c(:, indlog)';  crem'];
+
+
+m = M(indchain, :);
 
 % Init C
-iters=5000;
-C = poissrnd(phi.*(weights(:, 1:end-1)));
-C(isnan(weights))=0;
+iters=1000;
+
+%weights = rand(size(tw));
+weights= tw;
+
+% random C initialization
+counts = poissrnd(phi.*weights)+1;
+initc=counts;
+%C(isnan(weights))=0;
 c_samples =  cell(1, iters);
 
+
+rate=zeros(T, iters);
+epsilon = settings.leapfrog.epsilon/(Na-1)^(1/4).*ones(T,1); % Leapfrog stepsize
+
+
+
+
+
 for t=1:iters
+    if mod(t, 200)==0
+        t
+    end
+     counts = sample_C(counts, weights, phi, alpha, tau);
+    %[weights, rate(:, t)] = sample_weights(weights, counts, m, epsilon, alpha, tau, phi, settings);
+    %     wts
+    if t<settings.leapfrog.nadapt % Adapt the stepsize
+        epsilon = exp(log(epsilon) + .01*(mean(rate(:,1:t), 2) - 0.6));
+    end
     
-    C = sample_C(C, weights, phi, alpha, tau);
-    
-    c_samples{t} = C;
+    %  [weights] = sample_Wst(weights, counts, alpha, phi, tau);
+      
+    if (t>N_burn && rem((t-N_burn),thin)==0)
+        
+        for k=1:T
+            weights_st{k}(t, :) = weights(:, k);
+            
+            counts_st{k}(t, :) = counts(:, k);
+            
+        end
+    end
+    %
+  
+    %[weights counts] = sample_weights_add(counts, weights, m, alpha, phi, tau);
+  
+    c_samples{t} = counts;
 end
+
+
+for t=1:T
+    [~, indt{t}] = sort(m(:,t), 'descend');
+end
+thin=1;
+Na =size(m,1);
+
+
+% for t=1:T
+%     figure
+%     for k=1:min(size(tw(1:end-1, :), 1), 50)
+%         plot([k, k],...
+%             quantile(weights_st{t}(:,indt{t}(k)),[.025,.975]), 'r', ...
+%             'linewidth', 3);
+%         hold on
+%         plot(k, tw(indt{t}(k), t), 'xg', 'linewidth', 2)
+%     end
+%     xlim([0.1,min(Na, 50)+.5])
+%     legend('95% credible intervals', 'True value')
+%     legend boxoff
+%     box off
+%     xlabel('Index of node (sorted by dec. degree)', 'fontsize', 16)
+%     ylabel('Sociability parameter', 'fontsize', 16)
+% end
+
+
+for t=1:T
+    figure
+    for k=1:min(size(tw(1:end-1, :), 1), 50)
+        plot([k, k],...
+            quantile(counts_st{t}(:,indt{t}(k)),[.025,.975]), 'r', ...
+            'linewidth', 3);
+        hold on
+        plot(k, tc(indt{t}(k), t), 'xg', 'linewidth', 2)
+    end
+    xlim([0.1,min(Na, 50)+.5])
+    legend('95% credible intervals', 'True value')
+    legend boxoff
+    box off
+    xlabel('Index of node (sorted by dec. degree)', 'fontsize', 16)
+    ylabel('counts parameter', 'fontsize', 16)
+end
+
+
+

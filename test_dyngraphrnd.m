@@ -1,6 +1,12 @@
 % test_dyngraphrnd
 close all
 clear all
+
+
+% Add paths
+addpath('inference/utils/');
+
+
 seed=2;
 rand('seed',seed);
 randn('seed',seed);
@@ -9,15 +15,18 @@ alpha = 10; sigma = 0; tau = 1; % Parameters gamma process
 phi = 10; % tunes dependence in dependent gamma process 
 rho = 1; % death rate for latent interactions
 T = 10; % Number of time steps
-
-[Z, N, N_new, N_old, c, K, Knew, w] = dyngraphrnd(alpha, sigma, tau, T, phi, rho);
+settings.dt=1;
+gvar = ones(1,T); 
+settings.threshold=1e-3;
+settings.gcontrol=0;
+[Z, N, N_new, N_old, c, K, Knew, w] = dyngraphrnd(alpha, sigma, tau, T, phi, rho, gvar, settings);
 
 figure 
 weights = w(:, 1:K(T));
 plot(weights)
 
-figure
-plot(K)
+% figure
+% plot(K)
 
 figure
 imagesc(c)

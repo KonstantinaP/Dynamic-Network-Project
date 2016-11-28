@@ -1,0 +1,77 @@
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/konstantina/!svn/ver/1052/dynamic_network/matlab_code/test_sampler
+END
+test_alpha.m
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/konstantina/!svn/ver/1026/dynamic_network/matlab_code/test_sampler/test_alpha.m
+END
+test_rho.m
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/konstantina/!svn/ver/1026/dynamic_network/matlab_code/test_sampler/test_rho.m
+END
+test_ncounts.m
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/konstantina/!svn/ver/1046/dynamic_network/matlab_code/test_sampler/test_ncounts.m
+END
+test_tau.m
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/konstantina/!svn/ver/1052/dynamic_network/matlab_code/test_sampler/test_tau.m
+END
+test_weights.m
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/konstantina/!svn/ver/1025/dynamic_network/matlab_code/test_sampler/test_weights.m
+END
+test_wst.m
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/konstantina/!svn/ver/1025/dynamic_network/matlab_code/test_sampler/test_wst.m
+END
+test_gvar.m
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/konstantina/!svn/ver/1033/dynamic_network/matlab_code/test_sampler/test_gvar.m
+END
+test_phi.m
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/konstantina/!svn/ver/1027/dynamic_network/matlab_code/test_sampler/test_phi.m
+END
+sample_a.m
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/konstantina/!svn/ver/1015/dynamic_network/matlab_code/test_sampler/sample_a.m
+END
+test_C.m
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/konstantina/!svn/ver/1015/dynamic_network/matlab_code/test_sampler/test_C.m
+END
+test_weights_add.m
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/konstantina/!svn/ver/1044/dynamic_network/matlab_code/test_sampler/test_weights_add.m
+END
+test_script.m
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/konstantina/!svn/ver/1015/dynamic_network/matlab_code/test_sampler/test_script.m
+END

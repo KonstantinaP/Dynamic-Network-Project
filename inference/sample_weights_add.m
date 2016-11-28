@@ -1,43 +1,97 @@
-function [weights C] = sample_weights_add(C, weights, M, phi, tau)
+function [weights C] = sample_weights_add(C, weights, M, alpha, phi, tau, gvec)
+[K T] = size(weights);
 
-% Function that jointly samples the c_{tk} and w_{t+1k}
-% M - KxT
 
-[K, N] = size(weights);
-nb_MH = 1; % Nb of MH iterations
-counts = [C(1:K-1, :) zeros(K-1, 1)]; % padded with zero, needed for the acceptance ratio ratio
+% For weights that stop appearing after t
+for t=T-1:-1:1
+    
+    
+    ind = find(sum(M(:, t+1:end), 2) ==0);
+    wold = weights(ind, t+1:end);
+    wmint = weights(ind, t);
+    
+    cold = C(ind, t:end-1);
 
-R = sum(weights,1);
-R= repmat(R, K-1,1);
-true_weights=weights;
-true_c = C;
-weights= weights(1:K-1, :);
-wac = weights(:, 2:N);
-cac = C(1:K-1, :);
-R = R - weights; % K x N
+    cprop = zeros(size(cold));
+    
+    cprop(:, 1)=  poissrnd(phi.*wmint);
+    wprop = zeros(size(wold));
+    it=1;
+    
+    
+    for p = t:T-1
+        wprop(:, it) = (cprop(:, it)>0).*gamrnd(cprop(:, it), 1/(phi+tau));
+        cprop(:, it+1)=  poissrnd(phi.*wprop(:, it));
+        it=it+1;
+   
 
-for nn=1:nb_MH
-    Ctnew = poissrnd(phi.*(weights(:, 1:N-1)));
+    end
+%     keyboard
+%     cprop(:, end)=[];
+    R = sum(weights(:, t+1:end),1);
+    R = repmat(R, length(ind),1);
+    R = R - weights(ind, t+1:end);
+    gg=gvec(t+1:end);
+    gg = repmat(gg, length(ind), 1);
+    laccept = -2*gg.*R.*(wprop-wold)-gg.*(wprop.^2 - wold.^2);
     
-    Wttnew= (Ctnew>0).*gamrnd(counts(:, 1:N-1), 1/(phi+tau)); % the 2:N part of the weights
+    laccept = sum(laccept,2);
     
-    
-    temp = Wttnew.^2 - weights(:, 2:N).^2 +(2*R(:, 2:N) +phi).*(Wttnew - weights(:, 2:N));
-   logaccept= M(:, 2:N).*log(Wttnew - weights(:, 2:N)) + (Ctnew - counts(:, 1:N-1) + counts(:, 2:N)).*log(Wttnew)...
-        + (Ctnew - counts(:, 1:N-1) - counts(:, 2:N)).*log(weights(:, 2:N))+2*(counts(:, 1:N-1) - Ctnew) ...
-        - temp;
-    
-    u = rand(K-1, N-1);
-    
-    accept = exp(logaccept);
-    cac(u<accept) = Ctnew(u<accept);
-     wac(u<accept) = Wttnew(u<accept);
-    true_weights(1:K-1, 2:N) = wac;
-    true_c(1:K-1, :) = cac;
-    
+
+    u = rand(size(wprop, 1), 1);
+    accept = exp(laccept);
+
+    weights( ind(u<accept), t+1:end ) = wprop( u <accept, : );
+    C( ind(u<accept), t:end ) = cprop( u <accept, : );
+
 end
-weights = true_weights;
-C = true_c;
+
+
+% For weights that first appear at time t
+ 
+for t=2:T
+    ind = find(sum(M(:, 1:t-1), 2) ==0);
+    wold = weights(ind, 1:t-1);
+    wmint = weights(ind, t);
+    
+    cold = C(ind, 1:t-1);
+
+    cprop = zeros(size(cold));
+    cprop(:, t-1)=  poissrnd(phi.*wmint);
+    wprop = zeros(size(wold));
+    it=t-1;
+    
+    for p = t-1:-1:1
+        wprop(:, it) = (cprop(:, it)>0).*gamrnd(cprop(:, it), 1/(phi+tau));
+        if it>1
+
+        cprop(:, it-1)=  poissrnd(phi.*wprop(:, it));
+        end
+        it=it-1;
+    end
+   
+    R = sum(weights(:, 1:t-1),1);
+    R = repmat(R, length(ind),1);
+    R = R - weights(ind, 1:t-1);
+     
+      gg=gvec(1:t-1);
+    gg = repmat(gg, length(ind), 1);
+    laccept = -2*gg.*R.*(wprop-wold)-gg.*(wprop.^2 - wold.^2);
+    
+    laccept = sum(laccept,2);
+    
+
+    u = rand(size(wprop, 1), 1);
+    accept = exp(laccept);
+
+    weights( ind(u<accept), 1:t-1 ) = wprop( u <accept, : );
+    C( ind(u<accept), 1:t-1 ) = cprop( u <accept, : );
+    
+
+end
+% 
+
+
 
 
 end
