@@ -46,10 +46,12 @@ for nn=1:nbMH
             
             fi = 2*phiprop*ones(1,T);
             fi(1) = phiprop;
-            bb = sum(GGPpsi( (2.*sum_w + 2.*w_rem + fi), 1, sigmaprop, tauprop));
+            %bb = sum(GGPpsi( (2.*sum_w + 2.*w_rem + fi), 1, sigmaprop, tauprop));
             
            % bb = (tau^sigmaprop - tauprop^sigmaprop*sum(GGPpsi( (2.*sum_w + 2.*w_rem + fi)/tauprop, 1, sigmaprop, 1)))/sigmaprop
             alphaprop = gamrnd(K, 1/( bb));
+            %alphaprop = gamrnd(K+settings.hyper_alpha(1), 1/( bb+settings.hyper_alpha(2) ));
+            %keyboard
         else
             alphaprop = alpha.*exp(.02*randn);
         end
@@ -174,7 +176,7 @@ for nn=1:nbMH
     logaccept = t1 + t2+t3+t4+t5+t6+t7+t8+t9+t10 + t11 + caterm1 + caterm2 ;
     
     dbg = logaccept;
-    keyboard
+    
     if settings.estimate_alpha
         if ~settings.rw_alpha
             

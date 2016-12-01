@@ -18,8 +18,8 @@ addpath '../../inference/utils/'
 
 
 talpha = 400; tsigma = 0.1; ttau = 70; % Parameters gamma process
-tphi = 0;                       % tunes dependence in dependent gamma process
-rho = 0.001;                      % death rate for latent interactions
+tphi =0;                       % tunes dependence in dependent gamma process
+rho = 0.1;                      % death rate for latent interactions
 T =1;                         % Number of time steps
 settings.dt=1;
 settings.fromggprnd=1;
@@ -35,20 +35,20 @@ settings.leapfrog.epsilon = 0.1;
 settings.leapfrog.L = 10;
 settings.leapfrog.nadapt=0;
 
-N_Gibbs=5000;
-N_burn = 0.2*N_Gibbs;
+N_Gibbs=2000;
+N_burn = 0*N_Gibbs;
 thin = 1;
 N_samples = (N_Gibbs-N_burn)/thin;
 
 
-settings.estimate_alpha=1;
+settings.estimate_alpha=0;
 settings.estimate_sigma=0;
-settings.estimate_tau= 0;
+settings.estimate_tau= 1;
 settings.estimate_phi=0;
 settings.rw_alpha = 0;
 settings.rw_std(1) = 0.02; %sigma
-settings.rw_std(2) = .02; %tau
-settings.rw_std(3) = .02; %phi
+settings.rw_std(2) = 0.02; %tau
+settings.rw_std(3) = 0.02; %phi
 settings.hyper_alpha(1) = 0;
 settings.hyper_alpha(2) = 0;
 settings.hyper_tau(1)=0;
@@ -64,7 +64,7 @@ settings.hyper_sigma(2)=0;
 indlog = false(1, length(indchain)) ;
 indlog(indchain) = true;
 
-twrem =  sum(w(:, ~indlog), 2); % need to compute wrem so that we can use it as it is for the inference on weights
+twrem =  sum(w(:, ~indlog),2); % need to compute wrem so that we can use it as it is for the inference on weights
 tweights =w(:, indlog); % keep only the nodes that are active at least one time over T.
 twrem'
 %Increase the number of nodes by one to account for the unobserved ones.
@@ -72,9 +72,12 @@ tweights = [tweights'; twrem' ];
 K = size(tweights,1)-1;
 
 crem =  sum(c(:, ~indlog),2);
+
 tc=[c(:, indlog)';  crem'];
 
+
 m = M(indchain, :);
+
 
 indlognz = logical(indcnz);
 twrem_J = sum(w.*indlognz',2)';

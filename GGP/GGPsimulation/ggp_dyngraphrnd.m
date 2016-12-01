@@ -78,6 +78,8 @@ N(1,:,:) = N_new(1,:,:);
 Z(1,:,:) = (squeeze(N(1,:,:))+ squeeze(N(1,:,:))')>0;
 
 
+% indall=[];
+% indall = [indall unique(bin(:)) ];
 
 
 for t=2:T
@@ -106,6 +108,7 @@ for t=2:T
     
     
 end
+   
 
 %     maxclust = K(T);% max(find(sum(Z(end,:,:))>0))
 %     N_new = N_new(:,1:maxclust,1:maxclust); % directed counts, non-symmetric
